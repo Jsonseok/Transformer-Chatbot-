@@ -1,0 +1,28 @@
+	<nav role="navigation" class="navbar navbar-custom">
+		<div style="height: 100%; display: flex; justify-content: space-between; align-items: center; margin: 10px 20px;">
+			<!-- Brand and toggle get grouped for better mobile display -->
+			<div style="order: 1; text-align: center;">
+				<h4>
+					<a href="/">자연어처리및응용<br>
+					<label>({{system_mode}})</label></a>
+				</h4>
+			</div>
+
+		    <!-- 다른 HTML 파일의 내용을 여기에 삽입 -->
+		    {% include 'system.html' %}
+			
+			<!-- Collect the nav links, forms, and other content for toggling -->
+			<div style="order: 3;" class="text-center">
+
+					<div style="font-size: 30px; margin-bottom: 10px;">
+						<span class="label label-default system_status">System Status</span>
+					</div>
+	
+					<button id="ai_box_stop" class="btn btn-info">STOP</button>
+					<button id="ai_box_restart" class="btn btn-info">RESTART</button>
+
+			</div>
+			<!-- /.navbar-collapse -->
+		</div>
+		<!-- /.container-fluid -->
+	</nav>

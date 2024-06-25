@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="utf-8">
+    <title>자연어처리및응용 기말대체 과제</title>
+    <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no">
+    <link rel="shortcut icon" href="favicon_16.ico" />
+    <link rel="bookmark" href="favicon_16.ico" />
+    <!-- Site CSS -->
+    <link rel="stylesheet" href="static/dist/css/site.min.css">
+    <link rel="stylesheet" href="static/mdi/css/materialdesignicons.min.css">
+    <link rel="stylesheet" href="static/lib/css/jquery-ui.min.css">
+    <link rel="stylesheet" href="static/lib/css/dataTables.bootstrap.min.css">
+    <link rel="stylesheet" href="static/lib/css/toastr.css?var={{rand}}">
+    
+    <!-- Site JS -->
+    <script type="text/javascript" src="static/dist/js/site.min.js"></script>
+    <script src="static/lib/js/jquery-ui.min.js"></script>
+    <script src="static/lib/js/toastr.min.js"></script>
+    <script src="static/lib/js/konva.js"></script>
+    {% include 'common/css.html' %}
+    
+    <!-- Inline Styles -->
+    <style>
+        .chat-box {
+            border: 1px solid #80808069;
+            padding: 10px;
+            max-height: 400px;
+            overflow-y: scroll;
+            margin-bottom: 20px;
+        }
+        .chat-message {
+            padding: 5px 10px;
+            border-radius: 10px;
+            margin: 5px 0;
+            display: inline-block;
+            max-width: 80%;
+            clear: both;
+        }
+        .user-message {
+            background-color: #D1E7DD;
+            float: right;
+            text-align: right;
+        }
+        .bot-message {
+            background-color: #E2E2E2;
+            float: left;
+            text-align: left;
+        }
+        .chat-message strong {
+            display: block;
+            margin-bottom: 2px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header + Top -->
+    {% include 'top.html' %}
+    
+    <!-- Main Container -->
+    <div class="container-fluid">
+        <div class="row row-offcanvas row-offcanvas-left">
+            {% include 'menu.html' %}
+            <div class="col-xs-12 col-sm-9 content">
+                <div class="panel panel-default">
+                    <div class="panel-heading">
+                        <h3 class="panel-title">
+                            <a href="javascript:void(0);" class="toggle-sidebar">
+                                <span class="fa fa-angle-double-left" data-toggle="offcanvas" title="Maximize Panel"></span>
+                            </a> Gachon Translator
+                        </h3>
+                    </div>
+                    <div class="panel-body">
+                        <!-- Tab Menu -->
+                        <div class="col-md-12">
+                            <ul id="myTab" class="nav nav-pills nav-justified" style="justify-content: center;">
+                                <li><a href="#Chat_GPT" data-toggle="tab">Chat with GPT</a></li>
+                            </ul>
+                        </div>
+                        <!-- Tab Menu End -->
+                        
+                        <!-- Tab Content -->
+                        <div id="myTabContent" class="tab-content col-md-12">
+                            <!-- Chat GPT Tab -->
+                            <div class="tab-pane fade active in" id="Chat_GPT">
+                                <div class="tab-content col-md-12" style="border-top: 1px solid #80808069; padding-top: 10px;">
+                                    <div class="content-row">
+                                        <div class="row justify-content-center">
+                                            <div class="col-md-12 canvas-controll">
+                                                <div class="chat-box" id="chatBox">
+                                                    <!-- Chat messages will appear here -->
+                                                </div>
+                                                <table class="table no-border">
+                                                    <tr>
+                                                        <td colspan="3" style="text-align: center;"><h4>Input Text</h4></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>
+                                                            <div class="form-inline">
+                                                                <input placeholder="Type your message" class="form-control Input Text areaInput" id="textInput_Chat_GPT" type="text" onkeypress="handleKeyPress(event, 'Chat_GPT')" style="width: 100%; height: 80%;">
+                                                                <br>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>
+                                                            <button type="button" class="btn btn-info btn-add" style="width: 100%;" onclick="Chat_GPT_trans()">Send</button>
+                                                        </td>
+                                                    </tr>
+                                                </table>
+                                            </div>
+                                        </div>
+                                        <div class="row"></div>
+                                        <div class="row">
+                                            <div id="pagination-container" class="dataTables_paginate paging_bootstrap"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Chat GPT End -->
+                        </div>
+                        <!-- Tab Content End -->
+                    </div>
+                    <!-- Panel Body End -->
+                </div>
+                <!-- Panel Default End -->
+            </div>
+            <!-- Content End -->
+        </div>
+    </div>
+    <!-- Main Container End -->
+
+    <!-- Footer -->
+    <div class="site-footer">
+        <div class="container">
+            <div class="copyright clearfix">
+                <p><b>자연어처리및응용</b>&nbsp;&nbsp;&nbsp;&nbsp;</p>
+                <p>Copyright © ine.gachon.ac.kr 2023</p>
+            </div>
+        </div>
+    </div>
+    <!-- Footer End -->
+    
+    <div class="loading-overlay">
+        <img src="static/image/Spinner-1s-200px.gif" alt="Loading" class="loading-image">
+    </div>
+
+
+    <script src="static/lib/js/socket.io-3.0.1.min.js"></script>
+    <script>
+        $(function() {
+            window.onload = function() {
+                addMessageToChatBox('Chat_GPT', '대화형 GPT를 시작합니다', 'bot-message');
+            };
+
+            socket = io({
+                transports: ['websocket']
+            });
+            
+            socket.on('connect', function() {
+                console.log('Socket connected');
+            });
+
+            socket.on('disconnect', function() {
+                console.log('Socket disconnected');
+            });
+        });
+
+        async function Chat_GPT_trans() {
+            const userInput = document.getElementById('textInput_Chat_GPT').value;
+            if (userInput.trim() === "") return;
+            addMessageToChatBox('User', userInput, 'user-message');
+            document.getElementById('textInput_Chat_GPT').value = '';
+            try {
+                console.log('Sending request to the server...');
+                const response = await fetch('/chatgpt', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ prompt: userInput })
+                });
+                const data = await response.json();
+                if (data && data.response) {
+                    const modelResponse = data.response;
+                    console.log('Model response:', modelResponse);
+                    addMessageToChatBox('Chat_GPT', modelResponse, 'bot-message');
+                } else {
+                    console.error('Invalid response format:', data);
+                    addMessageToChatBox('Chat_GPT', 'Error: Invalid response format from the server.', 'bot-message');
+                }
+            } catch (error) {
+                console.error('Error occurred:', error);
+                addMessageToChatBox('Chat_GPT', 'Error occurred while processing your request.', 'bot-message');
+            }
+        }
+
+        function addMessageToChatBox(sender, message, className) {
+            const chatBox = document.getElementById('chatBox');
+            const messageElement = document.createElement('div');
+            messageElement.classList.add('message', className, 'chat-message');
+            messageElement.innerHTML = `<strong>${sender}</strong> ${message}`;
+            chatBox.appendChild(messageElement);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        function handleKeyPress(event, inputType) {
+            if (event.keyCode === 13 && inputType === 'Chat_GPT') {
+                Chat_GPT_trans();
+            }
+        }
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/raphael/raphael.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/justgage/justgage.js"></script>
+    <script src="static/lib/js/jquery.dataTables.min.js"></script>
+    <script src="static/lib/js/dataTables.bootstrap.min.js"></script>
+    <script src="static/user/js/system_info.js?var={{rand}}"></script>
+</body>
+</html>
